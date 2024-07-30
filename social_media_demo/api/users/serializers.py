@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 import re
+from api.models import CustomUser
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -11,7 +11,7 @@ class SignUpSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = User
+        model = CustomUser
         fields = [
             "first_name",
             "last_name",
@@ -22,12 +22,12 @@ class SignUpSerializer(serializers.ModelSerializer):
         ]
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        if CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("A user with this email already exists.")
         return value
 
     def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
+        if CustomUser.objects.filter(username=value).exists():
             raise serializers.ValidationError(
                 "A user with this username already exists."
             )
@@ -55,7 +55,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("confirm_password")
-        user = User.objects.create(
+        user = CustomUser.objects.create(
             username=validated_data["username"],
             email=validated_data["email"],
             first_name=validated_data.get("first_name", ""),
