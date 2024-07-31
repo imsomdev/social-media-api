@@ -2,10 +2,9 @@ from django.db import IntegrityError
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
-
 from api.models import FriendRequest
 from .serializers import (
-    AcceptFriendRequestSerializer,
+    FriendRequestActionSerializer,
     GetFriendRequestSerializer,
     GetSentFriendRequestSerializer,
     SentFriendRequestSerializer,
@@ -87,16 +86,17 @@ class GetFriendRequestListView(APIView):
         )
 
 
-class AcceptFriendRequestView(APIView):
+class FriendRequestActionView(APIView):
     def post(self, request):
-        serializer = AcceptFriendRequestSerializer(
+        serializer = FriendRequestActionSerializer(
             data=request.data, context={"request": request}
         )
 
         if serializer.is_valid():
-            friend_request = serializer.save()
+            serializer.save()
+            action = serializer.validated_data["action"]
             return Response(
-                {"message": "Friend request accepted successfully"}, status=200
+                {"message": f"Friend request {action}ed successfully"}, status=200
             )
 
         return Response(serializer.errors, status=400)

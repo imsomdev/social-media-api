@@ -150,29 +150,48 @@ class GetFriendRequestSerializer(serializers.ModelSerializer):
         fields = ["from_user", "status"]
 
 
-class AcceptFriendRequestSerializer(serializers.Serializer):
+class FriendRequestActionSerializer(serializers.Serializer):
     user_id = serializers.UUIDField(write_only=True)
+    action = serializers.ChoiceField(choices=["accept", "reject"], write_only=True)
 
-    def validate_user_id(self, value):
+    def validate(self, data):
+        user_id = data.get("user_id")
+        action = data.get("action")
         current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+
+        if action not in ["accept", "reject"]:
+            raise serializers.ValidationError(
+                "Invalid action. Must be 'accept' or 'reject'."
+            )
+
         try:
             friend_request = FriendRequest.objects.get(
-                from_user_id=value, to_user=current_user, status="pending"
+                from_user_id=user_id, to_user=current_user, status="pending"
             )
         except FriendRequest.DoesNotExist:
             raise serializers.ValidationError(
                 "No pending friend request found from this user."
             )
 
-        return value
+        return data
 
     def save(self):
         user_id = self.validated_data["user_id"]
+        action = self.validated_data["action"]
         current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
-        friend_request = FriendRequest.objects.get(
-            from_user=user_id, to_user=current_user, status="pending"
-        )
-        friend_request.status = "accepted"
-        friend_request.save()
+
+        try:
+            friend_request = FriendRequest.objects.get(
+                from_user_id=user_id, to_user=current_user, status="pending"
+            )
+        except FriendRequest.DoesNotExist:
+            raise serializers.ValidationError("No pending friend request found.")
+
+        if action == "accept":
+            friend_request.status = "accepted"
+            friend_request.save()
+        elif action == "reject":
+            friend_request.status = "rejected"
+            friend_request.save()
 
         return friend_request

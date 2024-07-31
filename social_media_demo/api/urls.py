@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.urls import path
 from .views import HealthCheckView
 from .users.views import (
-    AcceptFriendRequestView,
     CancelFriendRequestView,
+    FriendRequestActionView,
     GetFriendRequestListView,
     SentFriendRequestView,
     SignUpView,
@@ -28,8 +28,8 @@ urlpatterns = [
         name="cancel-friend-request",
     ),
     path(
-        "friend-request/accept",
-        AcceptFriendRequestView.as_view(),
-        name="accept-friend-request",
+        "friend-request/actions",
+        FriendRequestActionView.as_view(),
+        name="actions-friend-request",
     ),
 ]
