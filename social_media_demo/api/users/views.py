@@ -5,6 +5,7 @@ from rest_framework import authentication, permissions
 
 from api.models import FriendRequest
 from .serializers import (
+    GetFriendRequestSerializer,
     GetSentFriendRequestSerializer,
     SentFriendRequestSerializer,
     SignUpSerializer,
@@ -69,3 +70,17 @@ class CancelFriendRequestView(APIView):
                 )
         except FriendRequest.DoesNotExist:
             return Response({"error": "Friend request not found."}, status=404)
+
+
+class GetFriendRequestListView(APIView):
+    def get(self, request):
+        user = request.user
+        received_requests = FriendRequest.objects.filter(
+            to_user=user,
+            status="pending",
+        )
+        serializer = GetFriendRequestSerializer(received_requests, many=True)
+        return Response(
+            {"count": received_requests.count(), "friend_requests": serializer.data},
+            status=200,
+        )

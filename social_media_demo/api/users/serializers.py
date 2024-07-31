@@ -141,3 +141,11 @@ class GetSentFriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = ["to_user", "status"]
+
+
+class GetFriendRequestSerializer(serializers.ModelSerializer):
+    from_user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = ["from_user", "status"]
