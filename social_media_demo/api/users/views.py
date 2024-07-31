@@ -5,6 +5,7 @@ from rest_framework import authentication, permissions
 
 from api.models import FriendRequest
 from .serializers import (
+    AcceptFriendRequestSerializer,
     GetFriendRequestSerializer,
     GetSentFriendRequestSerializer,
     SentFriendRequestSerializer,
@@ -84,3 +85,18 @@ class GetFriendRequestListView(APIView):
             {"count": received_requests.count(), "friend_requests": serializer.data},
             status=200,
         )
+
+
+class AcceptFriendRequestView(APIView):
+    def post(self, request):
+        serializer = AcceptFriendRequestSerializer(
+            data=request.data, context={"request": request}
+        )
+
+        if serializer.is_valid():
+            friend_request = serializer.save()
+            return Response(
+                {"message": "Friend request accepted successfully"}, status=200
+            )
+
+        return Response(serializer.errors, status=400)

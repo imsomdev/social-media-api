@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
 import re
 from api.models import CustomUser, FriendRequest
 from django.db.models import Q
@@ -149,3 +148,31 @@ class GetFriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
         fields = ["from_user", "status"]
+
+
+class AcceptFriendRequestSerializer(serializers.Serializer):
+    user_id = serializers.UUIDField(write_only=True)
+
+    def validate_user_id(self, value):
+        current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        try:
+            friend_request = FriendRequest.objects.get(
+                from_user_id=value, to_user=current_user, status="pending"
+            )
+        except FriendRequest.DoesNotExist:
+            raise serializers.ValidationError(
+                "No pending friend request found from this user."
+            )
+
+        return value
+
+    def save(self):
+        user_id = self.validated_data["user_id"]
+        current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        friend_request = FriendRequest.objects.get(
+            from_user=user_id, to_user=current_user, status="pending"
+        )
+        friend_request.status = "accepted"
+        friend_request.save()
+
+        return friend_request
