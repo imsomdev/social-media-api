@@ -7,12 +7,12 @@ urlpatterns = [
     path("health-check", HealthCheckView.as_view(), name="health-check"),
     path("signup", SignUpView.as_view(), name="signup"),
     path(
-        "send-friend-request",
+        "friend-request/send",
         SentFriendRequestView.as_view(),
         name="send-friend-request",
     ),
     path(
-        "cancel-friend-request",
+        "friend-request/cancel",
         CancelFriendRequestView.as_view(),
         name="cancel-friend-request",
     ),

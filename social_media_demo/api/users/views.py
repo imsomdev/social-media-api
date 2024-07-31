@@ -33,12 +33,7 @@ class SignUpView(APIView):
 
 class SentFriendRequestView(APIView):
     def post(self, request):
-        serializer = SentFriendRequestSerializer(
-            data=request.data,
-            context={
-                "request": request,
-            },
-        )
+        serializer = SentFriendRequestSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "friend request send successfully"}, status=201)
