@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 import re
-from api.models import CustomUser
+from api.models import CustomUser, FriendRequest
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -56,11 +56,50 @@ class SignUpSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("confirm_password")
         user = CustomUser.objects.create(
-            username=validated_data["username"],
-            email=validated_data["email"],
-            first_name=validated_data.get("first_name", ""),
-            last_name=validated_data.get("last_name", ""),
+            username=validated_data["username"].lower(),
+            email=validated_data["email"].lower(),
+            first_name=validated_data.get("first_name", "").lower(),
+            last_name=validated_data.get("last_name", "").lower(),
         )
-        user.set_password(validated_data["password"])
+        user.set_password(validated_data["password"].lower())
         user.save()
         return user
+
+
+class SentFriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ["from_user", "to_user", "status"]
+
+    def validate(self, data):
+        from_user = data.get("from_user")
+        to_user = data.get("to_user")
+
+        # Prevent self-friend requests
+        if from_user == to_user:
+            raise serializers.ValidationError(
+                "You cannot send a friend request to yourself."
+            )
+
+        # Check if a friend request already exists from from_user to to_user
+        if FriendRequest.objects.filter(from_user=from_user, to_user=to_user).exists():
+            raise serializers.ValidationError(
+                "Friend request already sent to this user."
+            )
+
+        # Check if a friend request already exists from to_user to from_user (reverse direction)
+        if FriendRequest.objects.filter(from_user=to_user, to_user=from_user).exists():
+            raise serializers.ValidationError(
+                "This user has already sent you a friend request."
+            )
+
+        # Additional validations as needed...
+
+    def create(self, validated_data):
+        friend_request = FriendRequest.objects.create(
+            from_user=validated_data.get("from_user"),
+            to_user=validated_data.get("to_user"),
+            status="pending",
+        )
+
+        return friend_request
