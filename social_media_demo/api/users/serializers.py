@@ -2,6 +2,7 @@ from rest_framework import serializers
 import re
 from api.models import CustomUser, FriendRequest
 from django.db.models import Q
+from django.contrib.auth import authenticate
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -62,14 +63,40 @@ class SignUpSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("confirm_password")
         user = CustomUser.objects.create(
-            username=validated_data["username"].lower(),
+            username=validated_data["username"],
             email=validated_data["email"].lower(),
             first_name=validated_data.get("first_name", "").lower(),
             last_name=validated_data.get("last_name", "").lower(),
         )
-        user.set_password(validated_data["password"].lower())
+        user.set_password(validated_data["password"])
         user.save()
         return user
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=255)
+    password = serializers.CharField(write_only=True)
+
+    def validate_username(self, value):
+        if not CustomUser.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username not found.")
+        return value
+
+    def validate(self, data):
+        username = data.get("username")
+        password = data.get("password")
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if not user:
+                raise serializers.ValidationError("Invalid username or password.")
+        else:
+            raise serializers.ValidationError(
+                "Both username and password are required."
+            )
+
+        data["user"] = user
+        return data
 
 
 class SentFriendRequestSerializer(serializers.ModelSerializer):

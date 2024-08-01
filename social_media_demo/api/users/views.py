@@ -1,3 +1,4 @@
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import IntegrityError
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -8,11 +9,11 @@ from .serializers import (
     FriendRequestActionSerializer,
     GetFriendRequestSerializer,
     GetSentFriendRequestSerializer,
+    LoginSerializer,
     SentFriendRequestSerializer,
     SignUpSerializer,
     UserSerializer,
 )
-from django.db.models import Q
 
 
 class SignUpView(APIView):
@@ -35,7 +36,31 @@ class SignUpView(APIView):
         return Response(serializer.errors, status=400)
 
 
+class LoginView(APIView):
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data["user"]
+
+            # Generate JWT token
+            refresh = RefreshToken.for_user(user)
+            access_token = str(refresh.access_token)
+            refresh_token = str(refresh)
+
+            return Response(
+                {
+                    "message": "Logged in successfully",
+                    "jwt": access_token,
+                    "refresh_token": refresh_token,
+                },
+                status=200,
+            )
+        return Response(serializer.errors, status=400)
+
+
 class SentFriendRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         serializer = SentFriendRequestSerializer(data=request.data)
         if serializer.is_valid():
@@ -57,6 +82,8 @@ class SentFriendRequestView(APIView):
 
 
 class CancelFriendRequestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         try:
             serializer = CancelFriendRequestSerializer(data=request.data)
@@ -69,6 +96,8 @@ class CancelFriendRequestView(APIView):
 
 
 class GetFriendRequestListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         user = request.user
         received_requests = FriendRequest.objects.filter(
@@ -83,6 +112,8 @@ class GetFriendRequestListView(APIView):
 
 
 class FriendRequestActionView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def post(self, request):
         serializer = FriendRequestActionSerializer(
             data=request.data, context={"request": request}
@@ -99,6 +130,8 @@ class FriendRequestActionView(APIView):
 
 
 class GetFriendListView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         user = "012ce81a-e10e-4e90-b45c-01945171daf0"
 

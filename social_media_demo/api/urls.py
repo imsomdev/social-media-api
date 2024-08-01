@@ -6,6 +6,7 @@ from .users.views import (
     FriendRequestActionView,
     GetFriendListView,
     GetFriendRequestListView,
+    LoginView,
     SentFriendRequestView,
     SignUpView,
 )
@@ -13,6 +14,7 @@ from .users.views import (
 urlpatterns = [
     path("health-check", HealthCheckView.as_view(), name="health-check"),
     path("signup", SignUpView.as_view(), name="signup"),
+    path("login", LoginView.as_view(), name="login"),
     path(
         "friend-request/send",
         SentFriendRequestView.as_view(),
