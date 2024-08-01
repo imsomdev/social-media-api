@@ -150,6 +150,37 @@ class GetFriendRequestSerializer(serializers.ModelSerializer):
         fields = ["from_user", "status"]
 
 
+class CancelFriendRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FriendRequest
+        fields = ["from_user", "to_user", "status"]
+
+    def validate(self, data):
+        from_user = data.get("from_user")
+        to_user = data.get("to_user")
+        friend_request = FriendRequest.objects.get(
+            to_user=to_user,
+            from_user=from_user,
+        )
+        if friend_request.status != "pending":
+            raise serializers.ValidationError(
+                "Cannot cancel a non-pending friend request"
+            )
+        return data
+
+    def create(self, validated_data):
+        from_user = validated_data.get("from_user")
+        to_user = validated_data.get("to_user")
+        existing_request = FriendRequest.objects.filter(
+            from_user=from_user, to_user=to_user
+        ).first()
+
+        if existing_request:
+            existing_request.status = "cancelled"
+            existing_request.save()
+            return existing_request
+
+
 class FriendRequestActionSerializer(serializers.Serializer):
     user_id = serializers.UUIDField(write_only=True)
     action = serializers.ChoiceField(choices=["accept", "reject"], write_only=True)

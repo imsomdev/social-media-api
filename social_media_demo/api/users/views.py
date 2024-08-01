@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import authentication, permissions
 from api.models import FriendRequest
 from .serializers import (
+    CancelFriendRequestSerializer,
     FriendRequestActionSerializer,
     GetFriendRequestSerializer,
     GetSentFriendRequestSerializer,
@@ -56,18 +57,11 @@ class SentFriendRequestView(APIView):
 class CancelFriendRequestView(APIView):
     def post(self, request):
         try:
-            friend_request = FriendRequest.objects.get(
-                to_user=request.data.get("to_user"),
-                from_user=request.data.get("from_user"),
-            )
-            if friend_request.status == "pending":
-                friend_request.status = "cancelled"
-                friend_request.save()
+            serializer = CancelFriendRequestSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
                 return Response({"message": "Friend request cancelled."}, status=200)
-            else:
-                return Response(
-                    {"error": "Cannot cancel a non-pending friend request."}, status=400
-                )
+            return Response(serializer.errors, status=400)
         except FriendRequest.DoesNotExist:
             return Response({"error": "Friend request not found."}, status=404)
 
@@ -100,3 +94,8 @@ class FriendRequestActionView(APIView):
             )
 
         return Response(serializer.errors, status=400)
+
+
+class GetFriendListView(APIView):
+    def get(self, request):
+        pass
