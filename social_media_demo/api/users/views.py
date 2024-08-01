@@ -10,7 +10,9 @@ from .serializers import (
     GetSentFriendRequestSerializer,
     SentFriendRequestSerializer,
     SignUpSerializer,
+    UserSerializer,
 )
+from django.db.models import Q
 
 
 class SignUpView(APIView):
@@ -98,4 +100,19 @@ class FriendRequestActionView(APIView):
 
 class GetFriendListView(APIView):
     def get(self, request):
-        pass
+        user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+
+        # Get all accepted friend requests where the current user is either from_user or to_user
+        sent_friends = FriendRequest.objects.filter(from_user=user, status="accepted")
+        received_friends = FriendRequest.objects.filter(to_user=user, status="accepted")
+
+        # Combine the friends from both queries, ensuring no duplicates
+        friend_users = set(
+            [friend.to_user for friend in sent_friends]
+            + [friend.from_user for friend in received_friends]
+        )
+
+        # Serialize the friend user objects
+        serializer = UserSerializer(friend_users, many=True)
+
+        return Response(serializer.data, status=200)

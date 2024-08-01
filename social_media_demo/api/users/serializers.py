@@ -82,20 +82,17 @@ class SentFriendRequestSerializer(serializers.ModelSerializer):
         from_user = data.get("from_user")
         to_user = data.get("to_user")
 
-        # Prevent self-friend requests
         if from_user == to_user:
             raise serializers.ValidationError(
                 "You cannot send a friend request to yourself."
             )
 
-        # Check if already friends
         if FriendRequest.objects.filter(
             Q(from_user=from_user, to_user=to_user, status="accepted")
             | Q(to_user=from_user, from_user=to_user, status="accepted")
         ).exists():
             raise serializers.ValidationError("Already friends.")
 
-        # Check if a non-cancelled friend request already exists from from_user to to_user
         if (
             FriendRequest.objects.filter(from_user=from_user, to_user=to_user)
             .exclude(Q(status="cancelled") | Q(status="rejected"))
@@ -105,7 +102,6 @@ class SentFriendRequestSerializer(serializers.ModelSerializer):
                 "Friend request already sent to this user."
             )
 
-        # Check if a non-cancelled friend request already exists from to_user to from_user (reverse direction)
         if (
             FriendRequest.objects.filter(from_user=to_user, to_user=from_user)
             .exclude(Q(status="cancelled") | Q(status="rejected"))
