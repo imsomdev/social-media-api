@@ -88,6 +88,13 @@ class SentFriendRequestSerializer(serializers.ModelSerializer):
                 "You cannot send a friend request to yourself."
             )
 
+        # Check if already friends
+        if FriendRequest.objects.filter(
+            Q(from_user=from_user, to_user=to_user, status="accepted")
+            | Q(to_user=from_user, from_user=to_user, status="accepted")
+        ).exists():
+            raise serializers.ValidationError("Already friends.")
+
         # Check if a non-cancelled friend request already exists from from_user to to_user
         if (
             FriendRequest.objects.filter(from_user=from_user, to_user=to_user)
