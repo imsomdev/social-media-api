@@ -103,10 +103,11 @@ class SentFriendRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = FriendRequest
-        fields = ["from_user", "to_user", "status"]
+        fields = ["to_user", "status"]
 
     def validate(self, data):
-        from_user = data.get("from_user")
+        request = self.context["request"]
+        from_user = request.user
         to_user = data.get("to_user")
 
         if from_user == to_user:
@@ -141,21 +142,19 @@ class SentFriendRequestSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        from_user = validated_data.get("from_user")
+        request = self.context["request"]
+        from_user = request.user
         to_user = validated_data.get("to_user")
 
-        # Check if a friend request already exists (including cancelled ones)
         existing_request = FriendRequest.objects.filter(
             from_user=from_user, to_user=to_user
         ).first()
 
         if existing_request:
-            # If it exists, update the status to "pending" or as appropriate
             existing_request.status = "pending"
             existing_request.save()
             return existing_request
         else:
-            # If no existing request, create a new one
             friend_request = FriendRequest.objects.create(
                 from_user=from_user,
                 to_user=to_user,
@@ -183,10 +182,10 @@ class GetFriendRequestSerializer(serializers.ModelSerializer):
 class CancelFriendRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FriendRequest
-        fields = ["from_user", "to_user", "status"]
+        fields = ["to_user", "status"]
 
     def validate(self, data):
-        from_user = data.get("from_user")
+        from_user = self.context["request"].user
         to_user = data.get("to_user")
         friend_request = FriendRequest.objects.get(
             to_user=to_user,
@@ -199,7 +198,7 @@ class CancelFriendRequestSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        from_user = validated_data.get("from_user")
+        from_user = self.context["request"].user
         to_user = validated_data.get("to_user")
         existing_request = FriendRequest.objects.filter(
             from_user=from_user, to_user=to_user
@@ -218,7 +217,7 @@ class FriendRequestActionSerializer(serializers.Serializer):
     def validate(self, data):
         user_id = data.get("user_id")
         action = data.get("action")
-        current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        current_user = self.context["request"].user
 
         if action not in ["accept", "reject"]:
             raise serializers.ValidationError(
@@ -239,7 +238,7 @@ class FriendRequestActionSerializer(serializers.Serializer):
     def save(self):
         user_id = self.validated_data["user_id"]
         action = self.validated_data["action"]
-        current_user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        current_user = self.context["request"].user
 
         try:
             friend_request = FriendRequest.objects.get(

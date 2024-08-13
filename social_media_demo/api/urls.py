@@ -4,6 +4,7 @@ from .views import HealthCheckView
 from .users.views import (
     CancelFriendRequestView,
     FriendRequestActionView,
+    GetAllUserView,
     GetFriendListView,
     GetFriendRequestListView,
     LoginView,
@@ -28,7 +29,7 @@ urlpatterns = [
     path(
         "friend-request",
         GetFriendRequestListView.as_view(),
-        name="cancel-friend-request",
+        name="friend-request",
     ),
     path(
         "friend-request/actions",
@@ -40,4 +41,5 @@ urlpatterns = [
         GetFriendListView.as_view(),
         name="friend-list",
     ),
+    path("all-users", GetAllUserView.as_view(), name="all-users"),
 ]

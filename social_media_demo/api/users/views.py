@@ -1,9 +1,10 @@
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import IntegrityError
+from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import authentication, permissions
-from api.models import FriendRequest
+from api.models import CustomUser, FriendRequest
 from .serializers import (
     CancelFriendRequestSerializer,
     FriendRequestActionSerializer,
@@ -14,6 +15,7 @@ from .serializers import (
     SignUpSerializer,
     UserSerializer,
 )
+from django.db.models import Q
 
 
 class SignUpView(APIView):
@@ -52,6 +54,13 @@ class LoginView(APIView):
                     "message": "Logged in successfully",
                     "jwt": access_token,
                     "refresh_token": refresh_token,
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    },
                 },
                 status=200,
             )
@@ -62,14 +71,16 @@ class SentFriendRequestView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = SentFriendRequestSerializer(data=request.data)
+        serializer = SentFriendRequestSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "friend request send successfully"}, status=201)
+            return Response({"message": "Friend request sent successfully"}, status=201)
         return Response(serializer.errors, status=400)
 
     def get(self, request):
-        user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        user = request.user
         sent_requests = FriendRequest.objects.filter(
             from_user=user,
             status="pending",
@@ -86,7 +97,10 @@ class CancelFriendRequestView(APIView):
 
     def post(self, request):
         try:
-            serializer = CancelFriendRequestSerializer(data=request.data)
+            serializer = CancelFriendRequestSerializer(
+                data=request.data,
+                context={"request": request},
+            )
             if serializer.is_valid():
                 serializer.save()
                 return Response({"message": "Friend request cancelled."}, status=200)
@@ -133,7 +147,7 @@ class GetFriendListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        user = "012ce81a-e10e-4e90-b45c-01945171daf0"
+        user = request.user
 
         # Get all accepted friend requests where the current user is either from_user or to_user
         sent_friends = FriendRequest.objects.filter(from_user=user, status="accepted")
@@ -149,3 +163,24 @@ class GetFriendListView(APIView):
         serializer = UserSerializer(friend_users, many=True)
 
         return Response(serializer.data, status=200)
+
+
+class GetAllUserView(ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        friends = FriendRequest.objects.filter(
+            (Q(from_user=user) | Q(to_user=user)) & Q(status="accepted")
+        ).values_list("from_user", "to_user")
+        friend_ids = {user_id for friend_pair in friends for user_id in friend_pair}
+        pending_requests = FriendRequest.objects.filter(
+            (Q(from_user=user) | Q(to_user=user)) & Q(status="pending")
+        ).values_list("from_user", "to_user")
+        pending_ids = {
+            user_id for pending_pair in pending_requests for user_id in pending_pair
+        }
+        exclude_ids = friend_ids.union(pending_ids)
+        return CustomUser.objects.exclude(id__in=exclude_ids).exclude(id=user.id)
