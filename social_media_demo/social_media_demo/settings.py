@@ -144,7 +144,8 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     )
 }
-
+MEDIA_ROOT = os.path.join(BASE_DIR, "post_images")
+MEDIA_URL = "/post_images/"
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),

@@ -2,3 +2,4 @@ venv
 /.vscode
 __pycache__
 .env
+social_media_demo/post_images

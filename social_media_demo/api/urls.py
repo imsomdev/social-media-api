@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path
+from .posts.views import CreatePostView, DeletePostView
 from .views import HealthCheckView
 from .users.views import (
     CancelFriendRequestView,
@@ -42,4 +43,6 @@ urlpatterns = [
         name="friend-list",
     ),
     path("all-users", GetAllUserView.as_view(), name="all-users"),
+    path("create-post", CreatePostView.as_view(), name="create-post"),
+    path("delete-post", DeletePostView.as_view(), name="delete-post"),
 ]
