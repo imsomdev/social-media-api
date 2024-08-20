@@ -30,7 +30,7 @@ class FriendRequest(models.Model):
 from django.db import models
 
 
-class PostModel(models.Model):
+class Post(models.Model):
     user = models.ForeignKey(CustomUser, related_name="posts", on_delete=models.CASCADE)
     caption = models.TextField(null=True, blank=True)
     image = models.ImageField(null=True, blank=True)  # Ensure this line exists
@@ -51,15 +51,17 @@ class PostModel(models.Model):
         self.shares_count += 1
         self.save()
 
-    def increment_likes_count(self):
-        self.likes_count += 1
+    def increment_likes_count(self, action):
+        if action < 0 and self.likes_count == 0:
+            return
+
+        self.likes_count += action
+        self.likes_count = max(self.likes_count, 0)  # Prevent negative values
         self.save()
 
 
-class CommentModel(models.Model):
-    post = models.ForeignKey(
-        PostModel, related_name="comments", on_delete=models.CASCADE
-    )
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name="comments", on_delete=models.CASCADE)
     user = models.ForeignKey(
         CustomUser, related_name="comments", on_delete=models.CASCADE
     )
@@ -70,8 +72,8 @@ class CommentModel(models.Model):
         return f"Comment by {self.user.username} on {self.post.id}"
 
 
-class ShareModel(models.Model):
-    post = models.ForeignKey(PostModel, related_name="shares", on_delete=models.CASCADE)
+class Share(models.Model):
+    post = models.ForeignKey(Post, related_name="shares", on_delete=models.CASCADE)
     user = models.ForeignKey(
         CustomUser, related_name="shares", on_delete=models.CASCADE
     )
@@ -81,8 +83,8 @@ class ShareModel(models.Model):
         return f"Share by {self.user.username} on {self.post.id}"
 
 
-class LikeModel(models.Model):
-    post = models.ForeignKey(PostModel, related_name="likes", on_delete=models.CASCADE)
+class Like(models.Model):
+    post = models.ForeignKey(Post, related_name="likes", on_delete=models.CASCADE)
     user = models.ForeignKey(CustomUser, related_name="likes", on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
